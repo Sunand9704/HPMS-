@@ -36,14 +36,14 @@ const AboutSection = () => {
         <div className="mx-auto max-w-3xl text-center mb-16">
           <div className="mb-4 inline-flex items-center rounded-full bg-medical-blue-light px-4 py-2 text-sm font-medium text-primary">
             <Heart className="mr-2 h-4 w-4" />
-            About Delta Hospitals
+            About NeoMedix Hospitals
           </div>
           <h2 className="mb-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
             Best Multispeciality Hospital in Rajahmundry
           </h2>
           <div className="w-24 h-1 bg-gradient-medical mx-auto mb-6"></div>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            At Delta Hospitals, we are committed to providing exceptional healthcare services 
+            At NeoMedix Hospitals, we are committed to providing exceptional healthcare services 
             with cutting-edge medical technology and compassionate care. Our mission is to 
             deliver world-class treatment while maintaining the highest standards of medical ethics.
           </p>
@@ -81,7 +81,7 @@ const AboutSection = () => {
             <div className="absolute inset-0 bg-gradient-medical rounded-2xl transform rotate-3"></div>
             <Card className="relative bg-background shadow-card border-card-border">
               <CardContent className="p-8">
-                <h4 className="text-xl font-bold text-primary mb-4">Why Choose Delta Hospitals?</h4>
+                <h4 className="text-xl font-bold text-primary mb-4">Why Choose NeoMedix Hospitals?</h4>
                 <ul className="space-y-3 text-muted-foreground">
                   <li className="flex items-start">
                     <div className="w-2 h-2 bg-accent rounded-full mt-2 mr-3 flex-shrink-0"></div>

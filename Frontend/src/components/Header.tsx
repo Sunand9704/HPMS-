@@ -75,7 +75,7 @@ const Header = () => {
                     </div>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-bold text-primary">Delta Hospitals</span>
+                    <span className="font-bold text-primary">NeoMedix Hospitals</span>
                   </div>
                 </div>
                 

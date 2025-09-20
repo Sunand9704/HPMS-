@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   UserCheck, 
-  Plus, 
   Search, 
   Filter, 
   MoreHorizontal,
@@ -30,6 +29,7 @@ import {
   Star,
   Calendar
 } from "lucide-react";
+import AddDoctorDialog from "@/components/Dialogs/AddDoctorDialog";
 
 const mockDoctors = [
   {
@@ -130,10 +130,10 @@ export default function Doctors() {
             Manage medical staff and their specialties
           </p>
         </div>
-        <Button className="bg-gradient-primary hover:bg-primary-hover">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Doctor
-        </Button>
+        <AddDoctorDialog onDoctorAdded={() => {
+          // Refresh the doctors list or show success message
+          console.log("Doctor added successfully!");
+        }} />
       </div>
 
       {/* Stats Cards */}
