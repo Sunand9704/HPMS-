@@ -57,7 +57,9 @@ const AppointmentBookingModal = ({ isOpen, onClose, doctor }: AppointmentBooking
     email: '',
     phone: '',
     reason: '',
-    notes: ''
+    notes: '',
+    bloodPressure: '',
+    heartRate: ''
   });
 
   // Generate time slots based on doctor's working hours
@@ -315,6 +317,30 @@ const AppointmentBookingModal = ({ isOpen, onClose, doctor }: AppointmentBooking
                       placeholder="Enter your phone number"
                       required
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="bloodPressure">Blood Pressure (BP)</Label>
+                      <Input
+                        id="bloodPressure"
+                        value={patientInfo.bloodPressure}
+                        onChange={(e) => setPatientInfo(prev => ({ ...prev, bloodPressure: e.target.value }))}
+                        placeholder="e.g., 120/80"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="heartRate">Heart Rate (BPM)</Label>
+                      <Input
+                        id="heartRate"
+                        type="number"
+                        value={patientInfo.heartRate}
+                        onChange={(e) => setPatientInfo(prev => ({ ...prev, heartRate: e.target.value }))}
+                        placeholder="e.g., 72"
+                        min="30"
+                        max="200"
+                      />
+                    </div>
                   </div>
 
                   <div>

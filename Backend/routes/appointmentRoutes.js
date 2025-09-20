@@ -61,7 +61,6 @@ router.get('/', getAllAppointments);
 router.get('/today', getTodaysAppointments);
 router.get('/stats', getAppointmentStats);
 router.get('/:id', getAppointmentById);
-router.post('/public', publicAppointmentValidation, createPublicAppointment);
 router.post('/', createAppointmentValidation, createAppointment);
 router.put('/:id', updateAppointmentValidation, updateAppointment);
 router.put('/:id/cancel', cancelAppointmentValidation, cancelAppointment);

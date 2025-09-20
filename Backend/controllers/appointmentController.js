@@ -541,7 +541,9 @@ const createPublicAppointment = async (req, res) => {
       time,
       type = 'Consultation',
       reason = '',
-      notes = ''
+      notes = '',
+      bloodPressure = '',
+      heartRate = ''
     } = req.body;
 
     // Verify doctor exists
@@ -602,7 +604,12 @@ const createPublicAppointment = async (req, res) => {
       type,
       reason,
       notes,
+      vitalSigns: {
+        bloodPressure: bloodPressure || undefined,
+        heartRate: heartRate ? parseInt(heartRate) : undefined
+      },
       status: 'Scheduled',
+      createdBy: patientId, // Use patient ID as creator for public appointments
       isActive: true
     });
 
