@@ -1,14 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Phone, Calendar, User, LogOut } from "lucide-react";
+import { Menu, Phone, Calendar, User, LogOut, Stethoscope } from "lucide-react";
 import { usePatientAuth } from "@/contexts/PatientAuthContext";
 import LoginModal from "./LoginModal";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const { isAuthenticated, patient, logout } = usePatientAuth();
+  const { isAuthenticated, patient, doctor, logout } = usePatientAuth();
+  const navigate = useNavigate();
 
   const navigationItems = [
     { name: "Home", href: "#home" },
@@ -62,8 +64,19 @@ const Header = () => {
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <User className="h-4 w-4" />
-                  <span>Welcome, {patient?.name}</span>
+                  <span>Welcome, {patient?.name || doctor?.name}</span>
                 </div>
+                {doctor && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/doctor-dashboard')}
+                    className="flex items-center space-x-1"
+                  >
+                    <Stethoscope className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -128,7 +141,7 @@ const Header = () => {
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2 text-sm text-gray-600 p-2 bg-gray-50 rounded">
                         <User className="h-4 w-4" />
-                        <span>Welcome, {patient?.name}</span>
+                        <span>Welcome, {patient?.name || doctor?.name}</span>
                       </div>
                       <Button 
                         variant="outline" 

@@ -7,7 +7,8 @@ const {
   updatePatient,
   deletePatient,
   getPatientStats,
-  registerPatient
+  registerPatient,
+  loginPatient
 } = require('../controllers/patientController');
 
 const router = express.Router();
@@ -77,6 +78,12 @@ const registerPatientValidation = [
     .normalizeEmail()
     .toLowerCase(),
   
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
+  
   body('phone')
     .notEmpty()
     .withMessage('Phone number is required')
@@ -86,12 +93,30 @@ const registerPatientValidation = [
     .withMessage('Please enter a valid phone number')
 ];
 
+// Patient login validation
+const loginPatientValidation = [
+  body('email')
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email address')
+    .normalizeEmail()
+    .toLowerCase(),
+  
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long')
+];
+
 // Routes
 router.get('/', getAllPatients);
 router.get('/stats', getPatientStats);
 router.get('/:id', getPatientById);
 router.post('/', createPatient);
-router.post('/register', registerPatient); // Public registration
+router.post('/register', registerPatientValidation, registerPatient); // Public registration
+router.post('/login', loginPatientValidation, loginPatient); // Public login
 router.put('/:id', updatePatientValidation, updatePatient);
 router.delete('/:id', deletePatient);
 

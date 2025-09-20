@@ -446,6 +446,68 @@ const getTodaysAppointments = async (req, res) => {
   }
 };
 
+// @desc    Get doctor's appointments
+// @route   GET /api/appointments/doctor/:doctorId
+// @access  Private
+const getDoctorAppointments = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const { status, date, page = 1, limit = 10 } = req.query;
+
+    // Build query
+    const query = { 
+      doctor: doctorId,
+      isActive: true 
+    };
+    
+    if (status) {
+      query.status = status;
+    }
+    
+    if (date) {
+      const startDate = new Date(date);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 1);
+      query.appointmentDate = {
+        $gte: startDate,
+        $lt: endDate
+      };
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Execute query
+    const appointments = await Appointment.find(query)
+      .populate('patient', 'name age gender phone email medicalCondition')
+      .populate('doctor', 'name specialty email phone')
+      .sort({ appointmentDate: 1, appointmentTime: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Appointment.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: {
+        appointments,
+        pagination: {
+          current: parseInt(page),
+          pages: Math.ceil(total / parseInt(limit)),
+          total
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get doctor appointments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch doctor appointments',
+      error: error.message
+    });
+  }
+};
+
 // @desc    Get appointment statistics
 // @route   GET /api/appointments/stats
 // @access  Private
@@ -528,5 +590,6 @@ module.exports = {
   cancelAppointment,
   completeAppointment,
   getTodaysAppointments,
+  getDoctorAppointments,
   getAppointmentStats
 };

@@ -410,6 +410,7 @@ const registerPatient = async (req, res) => {
       age,
       gender,
       email,
+      password,
       phone
     } = req.body;
 
@@ -427,6 +428,7 @@ const registerPatient = async (req, res) => {
       age,
       gender,
       email,
+      password,
       phone,
       status: 'Active'
     });
@@ -471,6 +473,79 @@ const registerPatient = async (req, res) => {
   }
 };
 
+// @desc    Login patient
+// @route   POST /api/patients/public/login
+// @access  Public
+const loginPatient = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Find patient by email and include password
+    const patient = await Patient.findOne({ email }).select('+password');
+    
+    if (!patient || !patient.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await patient.comparePassword(password);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        patientId: patient._id, 
+        email: patient.email, 
+        role: 'Patient',
+        type: 'patient'
+      },
+      process.env.JWT_SECRET || 'hpms_secret_key',
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token,
+        patient: {
+          id: patient._id,
+          name: patient.name,
+          email: patient.email,
+          age: patient.age,
+          gender: patient.gender,
+          phone: patient.phone,
+          status: patient.status
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Login patient error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to login patient',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllPatients,
   getPatientById,
@@ -478,5 +553,6 @@ module.exports = {
   updatePatient,
   deletePatient,
   getPatientStats,
-  registerPatient
+  registerPatient,
+  loginPatient
 };

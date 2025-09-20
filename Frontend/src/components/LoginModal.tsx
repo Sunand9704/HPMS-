@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,11 +36,13 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
     age: "",
     gender: "",
     email: "",
+    password: "",
     phone: ""
   });
 
   const { toast } = useToast();
   const { login } = usePatientAuth();
+  const navigate = useNavigate();
 
   const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -76,7 +79,7 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
   };
 
   const validateRegisterForm = () => {
-    if (!registerData.name || !registerData.age || !registerData.gender || !registerData.email || !registerData.phone) {
+    if (!registerData.name || !registerData.age || !registerData.gender || !registerData.email || !registerData.password || !registerData.phone) {
       setError("Please fill in all required fields");
       return false;
     }
@@ -89,6 +92,11 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
 
     if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(registerData.email)) {
       setError("Please enter a valid email address");
+      return false;
+    }
+
+    if (registerData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return false;
     }
 
@@ -135,37 +143,51 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
     }
 
     try {
-      const loginCredentials: LoginData = {
-        email: loginData.email,
-        password: loginData.password,
-        role: loginData.role as 'Doctor' | 'Patient'
-      };
-
-      const response = await authApi.login(loginCredentials);
+      let response;
       
-      if (response.success && response.data) {
-        // Handle successful login based on role
-        if (loginData.role === "Patient") {
-          // For patient login, we'll use the same login function as registration
-          login(response.data.user || response.data.patient, response.data.token);
+      if (loginData.role === "Patient") {
+        // Use patient login API
+        response = await patientApi.login({
+          email: loginData.email,
+          password: loginData.password
+        });
+        
+        if (response.success && response.data) {
+          login(response.data.patient, response.data.token);
           
           toast({
             title: "Login Successful",
-            description: `Welcome back, ${response.data.user?.name || response.data.patient?.name}!`,
+            description: `Welcome back, ${response.data.patient.name}!`,
           });
           
           onClose();
-        } else if (loginData.role === "Doctor") {
-          // For doctor login, we'll handle it differently
+        } else {
+          setError(response.message || "Login failed. Please try again.");
+        }
+      } else if (loginData.role === "Doctor") {
+        // Use general auth API for doctors
+        const loginCredentials: LoginData = {
+          email: loginData.email,
+          password: loginData.password,
+          role: loginData.role as 'Doctor' | 'Patient'
+        };
+
+        response = await authApi.login(loginCredentials);
+        
+        if (response.success && response.data) {
+          // For doctor login, we need to call the login function with the user data
+          login(response.data.user, response.data.token);
+          
           toast({
             title: "Login Successful",
             description: `Welcome back, Dr. ${response.data.user?.name}!`,
           });
           
           onClose();
+          navigate('/doctor-dashboard');
+        } else {
+          setError(response.message || "Login failed. Please try again.");
         }
-      } else {
-        setError(response.message || "Login failed. Please try again.");
       }
       
     } catch (err: any) {
@@ -199,6 +221,7 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
         age: parseInt(registerData.age),
         gender: registerData.gender as 'Male' | 'Female' | 'Other',
         email: registerData.email,
+        password: registerData.password,
         phone: registerData.phone
       };
 
@@ -403,6 +426,22 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="text-sm font-medium text-gray-700">
+                    Password *
+                  </Label>
+                  <Input
+                    id="register-password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={registerData.password}
+                    onChange={handleRegisterInputChange}
+                    className="h-11"
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">

@@ -8,6 +8,7 @@ const {
   cancelAppointment,
   completeAppointment,
   getTodaysAppointments,
+  getDoctorAppointments,
   getAppointmentStats
 } = require('../controllers/appointmentController');
 
@@ -46,6 +47,7 @@ const completeAppointmentValidation = [
 // Routes
 router.get('/', getAllAppointments);
 router.get('/today', getTodaysAppointments);
+router.get('/doctor/:doctorId', getDoctorAppointments);
 router.get('/stats', getAppointmentStats);
 router.get('/:id', getAppointmentById);
 router.post('/', createAppointmentValidation, createAppointment);

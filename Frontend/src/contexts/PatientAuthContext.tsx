@@ -11,10 +11,19 @@ interface Patient {
   status: string;
 }
 
+interface Doctor {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string;
+}
+
 interface PatientAuthContextType {
   patient: Patient | null;
+  doctor: Doctor | null;
   isAuthenticated: boolean;
-  login: (patient: Patient, token: string) => void;
+  login: (user: Patient | Doctor, token: string) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -35,6 +44,7 @@ interface PatientAuthProviderProps {
 
 export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ children }) => {
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -45,7 +55,7 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
       // For now, we'll just check if it exists
       const isAuthenticated = tokenManager.isAuthenticated();
       if (isAuthenticated) {
-        // You could decode the token to get patient info
+        // You could decode the token to get user info
         // For now, we'll set a placeholder
         setPatient({
           id: 'temp',
@@ -61,19 +71,31 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
     setIsLoading(false);
   }, []);
 
-  const login = (patientData: Patient, token: string) => {
+  const login = (userData: Patient | Doctor, token: string) => {
     tokenManager.setToken(token);
-    setPatient(patientData);
+    
+    // Check if it's a patient or doctor based on the data structure
+    if ('age' in userData) {
+      // It's a patient
+      setPatient(userData as Patient);
+      setDoctor(null);
+    } else {
+      // It's a doctor
+      setDoctor(userData as Doctor);
+      setPatient(null);
+    }
   };
 
   const logout = () => {
     tokenManager.removeToken();
     setPatient(null);
+    setDoctor(null);
   };
 
   const value: PatientAuthContextType = {
     patient,
-    isAuthenticated: !!patient,
+    doctor,
+    isAuthenticated: !!(patient || doctor),
     login,
     logout,
     isLoading

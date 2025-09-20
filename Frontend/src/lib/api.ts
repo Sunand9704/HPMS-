@@ -39,6 +39,7 @@ export interface PatientRegistrationData {
   age: number;
   gender: 'Male' | 'Female' | 'Other';
   email: string;
+  password: string;
   phone: string;
 }
 
@@ -64,7 +65,7 @@ export interface PatientRegistrationResponse {
 // Generic API request function
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { skipAuth?: boolean } = {}
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE_URL}${endpoint}`;
   
@@ -73,7 +74,7 @@ async function apiRequest<T>(
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...(token && !options.skipAuth && { 'Authorization': `Bearer ${token}` }),
     },
   };
 
@@ -108,6 +109,16 @@ export const patientApi = {
     return apiRequest<PatientRegistrationResponse>('/patients/public/register', {
       method: 'POST',
       body: JSON.stringify(patientData),
+      skipAuth: true
+    });
+  },
+
+  // Login patient (public endpoint)
+  login: async (loginData: { email: string; password: string }): Promise<ApiResponse<PatientRegistrationResponse>> => {
+    return apiRequest<PatientRegistrationResponse>('/patients/public/login', {
+      method: 'POST',
+      body: JSON.stringify(loginData),
+      skipAuth: true
     });
   },
 
@@ -204,10 +215,56 @@ export const doctorApi = {
   },
 };
 
-// Appointment API functions (for future use)
+// Appointment API functions
 export const appointmentApi = {
-  getAll: async (): Promise<ApiResponse> => {
-    return apiRequest('/appointments', {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    type?: string;
+    doctor?: string;
+    patient?: string;
+    date?: string;
+  }): Promise<ApiResponse> => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const endpoint = `/appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiRequest(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  getByDoctor: async (doctorId: string, params?: {
+    status?: string;
+    date?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse> => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const endpoint = `/appointments/doctor/${doctorId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiRequest(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  getById: async (id: string): Promise<ApiResponse> => {
+    return apiRequest(`/appointments/${id}`, {
       method: 'GET',
     });
   },
@@ -226,9 +283,40 @@ export const appointmentApi = {
     });
   },
 
-  delete: async (id: string): Promise<ApiResponse> => {
-    return apiRequest(`/appointments/${id}`, {
-      method: 'DELETE',
+  complete: async (id: string, completionData: {
+    diagnosis?: string;
+    prescription?: any[];
+    vitalSigns?: any;
+    notes?: string;
+  }): Promise<ApiResponse> => {
+    return apiRequest(`/appointments/${id}/complete`, {
+      method: 'PUT',
+      body: JSON.stringify(completionData),
+    });
+  },
+
+  cancel: async (id: string, cancellationReason: string): Promise<ApiResponse> => {
+    return apiRequest(`/appointments/${id}/cancel`, {
+      method: 'PUT',
+      body: JSON.stringify({ cancellationReason }),
+    });
+  },
+
+  getTodays: async (doctorId?: string): Promise<ApiResponse> => {
+    const endpoint = doctorId ? `/appointments/today?doctor=${doctorId}` : '/appointments/today';
+    return apiRequest(endpoint, {
+      method: 'GET',
+    });
+  },
+
+  getStats: async (startDate?: string, endDate?: string): Promise<ApiResponse> => {
+    const queryParams = new URLSearchParams();
+    if (startDate) queryParams.append('startDate', startDate);
+    if (endDate) queryParams.append('endDate', endDate);
+    
+    const endpoint = `/appointments/stats${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiRequest(endpoint, {
+      method: 'GET',
     });
   },
 };
