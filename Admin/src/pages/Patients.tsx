@@ -24,9 +24,6 @@ import {
   Plus, 
   Search, 
   Filter, 
-  MoreHorizontal,
-  Eye,
-  Edit,
   Download,
   Phone
 } from "lucide-react";
@@ -48,6 +45,7 @@ export default function Patients() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+
 
   // Fetch patients data
   useEffect(() => {
@@ -89,6 +87,8 @@ export default function Patients() {
 
     fetchPatients();
   }, [isAuthenticated]);
+
+
 
   // Filter patients based on search and status
   const filteredPatients = Array.isArray(patients) ? patients.filter(patient => {
@@ -258,18 +258,14 @@ export default function Patients() {
                 <TableRow>
                   <TableHead>Patient Name</TableHead>
                   <TableHead>Age/Gender</TableHead>
-                  <TableHead>Assigned Doctor</TableHead>
-                  <TableHead>Condition</TableHead>
-                  <TableHead>Last Visit</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         <span className="ml-2">Loading patients...</span>
@@ -278,7 +274,7 @@ export default function Patients() {
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-danger">
+                    <TableCell colSpan={4} className="text-center py-8 text-danger">
                       Error loading patients: {error}
                     </TableCell>
                   </TableRow>
@@ -287,11 +283,6 @@ export default function Patients() {
                     <TableRow key={patient._id} className="hover:bg-accent/50">
                       <TableCell className="font-medium">{patient.name}</TableCell>
                       <TableCell>{patient.age}Y • {patient.gender}</TableCell>
-                      <TableCell>{patient.assignedDoctor?.name || 'N/A'}</TableCell>
-                      <TableCell>{patient.medicalCondition}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(patient.lastVisit).toLocaleDateString()}
-                      </TableCell>
                       <TableCell>
                         <Badge className={statusColors[patient.status as keyof typeof statusColors]}>
                           {patient.status}
@@ -303,34 +294,11 @@ export default function Patients() {
                           {patient.phone}
                         </Button>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit Record
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Download className="mr-2 h-4 w-4" />
-                              Export Data
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       No patients found
                     </TableCell>
                   </TableRow>
@@ -340,6 +308,7 @@ export default function Patients() {
           </div>
         </CardContent>
       </Card>
+
     </div>
   );
 }
