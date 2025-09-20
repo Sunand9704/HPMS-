@@ -31,20 +31,20 @@ const patientSchema = new mongoose.Schema({
     match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
   },
   address: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    zipCode: { type: String, required: true },
+    street: { type: String, required: false },
+    city: { type: String, required: false },
+    state: { type: String, required: false },
+    zipCode: { type: String, required: false },
     country: { type: String, default: 'USA' }
   },
   assignedDoctor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Doctor',
-    required: [true, 'Assigned doctor is required']
+    required: false
   },
   medicalCondition: {
     type: String,
-    required: [true, 'Medical condition is required'],
+    required: false,
     trim: true
   },
   status: {
@@ -57,9 +57,9 @@ const patientSchema = new mongoose.Schema({
     default: Date.now
   },
   emergencyContact: {
-    name: { type: String, required: true },
-    relationship: { type: String, required: true },
-    phone: { type: String, required: true }
+    name: { type: String, required: false },
+    relationship: { type: String, required: false },
+    phone: { type: String, required: false }
   },
   medicalHistory: [{
     condition: String,

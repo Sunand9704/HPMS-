@@ -15,7 +15,8 @@ const router = express.Router();
 // Validation middleware
 const loginValidation = [
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').notEmpty().withMessage('Password is required')
+  body('password').notEmpty().withMessage('Password is required'),
+  body('role').isIn(['Doctor', 'Patient']).withMessage('Role must be Doctor or Patient')
 ];
 
 const updateProfileValidation = [
