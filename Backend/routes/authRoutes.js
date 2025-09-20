@@ -16,7 +16,7 @@ const router = express.Router();
 const loginValidation = [
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').notEmpty().withMessage('Password is required'),
-  body('role').isIn(['Doctor', 'Patient']).withMessage('Role must be Doctor or Patient')
+  body('role').isIn(['Doctor', 'Patient', 'Admin']).withMessage('Role must be Doctor, Patient, or Admin')
 ];
 
 const updateProfileValidation = [

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Phone, Calendar, User, LogOut } from "lucide-react";
@@ -11,10 +12,10 @@ const Header = () => {
   const { isAuthenticated, patient, logout } = usePatientAuth();
 
   const navigationItems = [
-    { name: "Home", href: "#home" },
+    { name: "Home", href: "/" },
     { name: "About Us", href: "#about" },
     { name: "Specialities", href: "#specialities" },
-    { name: "Meet Our Doctors", href: "#doctors" },
+    { name: "Meet Our Doctors", href: "/doctors" },
     { name: "Health Packages", href: "#packages" },
     { name: "Careers", href: "#careers" },
     { name: "Contact Us", href: "#contact" },
@@ -40,14 +41,25 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
             {navigationItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-sm font-medium text-foreground hover:text-primary transition-colors relative group"
-              >
-                {item.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </a>
+              item.href.startsWith('/') ? (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className="text-sm font-medium text-foreground hover:text-primary transition-colors relative group"
+                >
+                  {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              ) : (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="text-sm font-medium text-foreground hover:text-primary transition-colors relative group"
+                >
+                  {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                </a>
+              )
             ))}
           </nav>
 
@@ -107,14 +119,25 @@ const Header = () => {
                 
                 <nav className="flex flex-col space-y-4">
                   {navigationItems.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      className="text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {item.name}
-                    </a>
+                    item.href.startsWith('/') ? (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        className="text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {item.name}
+                      </a>
+                    )
                   ))}
                 </nav>
 

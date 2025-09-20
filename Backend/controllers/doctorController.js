@@ -164,9 +164,10 @@ const createDoctor = async (req, res) => {
       languages
     } = req.body;
 
-    // Check if doctor already exists
+    // Check if doctor already exists (only check active doctors)
     const existingDoctor = await Doctor.findOne({ 
-      $or: [{ email }, { licenseNumber }] 
+      $or: [{ email }, { licenseNumber }],
+      isActive: true
     });
     if (existingDoctor) {
       return res.status(400).json({

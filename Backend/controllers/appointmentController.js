@@ -520,10 +520,141 @@ const getAppointmentStats = async (req, res) => {
   }
 };
 
+// @desc    Create appointment (public - for new patients)
+// @route   POST /api/appointments/public
+// @access  Public
+const createPublicAppointment = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const {
+      doctor,
+      patient,
+      date,
+      time,
+      type = 'Consultation',
+      reason = '',
+      notes = ''
+    } = req.body;
+
+    // Verify doctor exists
+    const doctorExists = await Doctor.findById(doctor);
+    if (!doctorExists || !doctorExists.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+
+    // Check for time conflicts
+    const conflict = await Appointment.findOne({
+      doctor,
+      appointmentDate: new Date(date),
+      appointmentTime: time,
+      status: { $in: ['Scheduled', 'In Progress'] },
+      isActive: true
+    });
+
+    if (conflict) {
+      return res.status(400).json({
+        success: false,
+        message: 'Time slot is already booked. Please choose another time.'
+      });
+    }
+
+    // Create or find patient
+    let patientId;
+    const existingPatient = await Patient.findOne({ email: patient.email });
+    
+    if (existingPatient) {
+      patientId = existingPatient._id;
+    } else {
+      // Create new patient
+      const newPatient = new Patient({
+        name: patient.name,
+        email: patient.email,
+        phone: patient.phone,
+        age: 0, // Default age, can be updated later
+        gender: 'Other', // Default gender, can be updated later
+        status: 'Active',
+        medicalCondition: 'General',
+        isActive: true
+      });
+      
+      const savedPatient = await newPatient.save();
+      patientId = savedPatient._id;
+    }
+
+    // Create appointment
+    const appointment = new Appointment({
+      patient: patientId,
+      doctor,
+      appointmentDate: new Date(date),
+      appointmentTime: time,
+      duration: 30, // Default 30 minutes
+      type,
+      reason,
+      notes,
+      status: 'Scheduled',
+      isActive: true
+    });
+
+    await appointment.save();
+
+    // Log activity
+    await Activity.logActivity({
+      user: patientId,
+      action: 'create_appointment',
+      entity: 'appointment',
+      entityId: appointment._id,
+      description: `New appointment scheduled with Dr. ${doctorExists.name}`,
+      details: {
+        appointmentId: appointment._id,
+        doctorName: doctorExists.name,
+        appointmentDate: date,
+        appointmentTime: time
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment booked successfully',
+      data: {
+        appointmentId: appointment._id,
+        appointmentDate: date,
+        appointmentTime: time,
+        doctor: {
+          name: doctorExists.name,
+          specialty: doctorExists.specialty
+        },
+        patient: {
+          name: patient.name,
+          email: patient.email
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Create public appointment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to book appointment',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllAppointments,
   getAppointmentById,
   createAppointment,
+  createPublicAppointment,
   updateAppointment,
   cancelAppointment,
   completeAppointment,

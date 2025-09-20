@@ -4,6 +4,7 @@ const {
   getAllAppointments,
   getAppointmentById,
   createAppointment,
+  createPublicAppointment,
   updateAppointment,
   cancelAppointment,
   completeAppointment,
@@ -43,11 +44,24 @@ const completeAppointmentValidation = [
   body('notes').optional().isString().withMessage('Notes must be a string')
 ];
 
+const publicAppointmentValidation = [
+  body('doctor').isMongoId().withMessage('Valid doctor ID is required'),
+  body('patient.name').notEmpty().withMessage('Patient name is required'),
+  body('patient.email').isEmail().withMessage('Valid patient email is required'),
+  body('patient.phone').notEmpty().withMessage('Patient phone is required'),
+  body('date').isISO8601().withMessage('Valid appointment date is required'),
+  body('time').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid time format (HH:MM) is required'),
+  body('type').optional().isIn(['Consultation', 'Follow-up', 'Emergency', 'Surgery Prep', 'Check-up', 'Procedure']).withMessage('Invalid appointment type'),
+  body('reason').optional().isString().withMessage('Reason must be a string'),
+  body('notes').optional().isString().withMessage('Notes must be a string')
+];
+
 // Routes
 router.get('/', getAllAppointments);
 router.get('/today', getTodaysAppointments);
 router.get('/stats', getAppointmentStats);
 router.get('/:id', getAppointmentById);
+router.post('/public', publicAppointmentValidation, createPublicAppointment);
 router.post('/', createAppointmentValidation, createAppointment);
 router.put('/:id', updateAppointmentValidation, updateAppointment);
 router.put('/:id/cancel', cancelAppointmentValidation, cancelAppointment);

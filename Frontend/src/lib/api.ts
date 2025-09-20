@@ -189,22 +189,22 @@ export const authApi = {
   },
 };
 
-// Doctor API functions (for future use)
+// Doctor API functions
 export const doctorApi = {
   getAll: async (): Promise<ApiResponse> => {
-    return apiRequest('/doctors', {
+    return apiRequest('/doctors/public', {
       method: 'GET',
     });
   },
 
   getById: async (id: string): Promise<ApiResponse> => {
-    return apiRequest(`/doctors/${id}`, {
+    return apiRequest(`/doctors/public/${id}`, {
       method: 'GET',
     });
   },
 };
 
-// Appointment API functions (for future use)
+// Appointment API functions
 export const appointmentApi = {
   getAll: async (): Promise<ApiResponse> => {
     return apiRequest('/appointments', {
@@ -213,7 +213,7 @@ export const appointmentApi = {
   },
 
   create: async (appointmentData: any): Promise<ApiResponse> => {
-    return apiRequest('/appointments', {
+    return apiRequest('/appointments/public', {
       method: 'POST',
       body: JSON.stringify(appointmentData),
     });
