@@ -58,7 +58,7 @@ const Footer = () => {
                 <Heart className="h-6 w-6 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold">Delta</span>
+                <span className="text-xl font-bold">NeoMedix</span>
                 <span className="text-sm opacity-90 -mt-1">HOSPITALS</span>
               </div>
             </div>
@@ -123,7 +123,7 @@ const Footer = () => {
               <div className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
                 <div className="text-sm opacity-90">
-                  <p className="font-medium">Delta Hospitals</p>
+                  <p className="font-medium">NeoMedix Hospitals</p>
                   <p>123 Medical Plaza, Health Street</p>
                   <p>Rajahmundry, Andhra Pradesh 533101</p>
                 </div>
@@ -140,8 +140,8 @@ const Footer = () => {
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-accent flex-shrink-0" />
                 <div className="text-sm opacity-90">
-                  <p>info@deltahospitals.com</p>
-                  <p>emergency@deltahospitals.com</p>
+                  <p>info@neomedixhospitals.com</p>
+                  <p>emergency@neomedixhospitals.com</p>
                 </div>
               </div>
               
@@ -179,7 +179,7 @@ const Footer = () => {
         <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0">
           <div className="text-center lg:text-left">
             <p className="text-sm opacity-90">
-              © 2024 Delta Hospitals. All rights reserved.
+              © 2024 NeoMedix Hospitals. All rights reserved.
             </p>
             <p className="text-xs opacity-75 mt-1">
               Committed to excellence in healthcare since 2010
