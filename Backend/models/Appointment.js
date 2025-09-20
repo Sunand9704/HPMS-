@@ -69,6 +69,11 @@ const appointmentSchema = new mongoose.Schema({
     duration: String,
     instructions: String
   }],
+  medicines: {
+    type: String,
+    trim: true,
+    maxlength: [2000, 'Medicines description cannot exceed 2000 characters']
+  },
   followUpRequired: {
     type: Boolean,
     default: false

@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Calendar, Clock, User, Stethoscope, CheckCircle, AlertCircle, LogOut, Phone } from "lucide-react";
+import { Calendar, Clock, User, Stethoscope, CheckCircle, AlertCircle, LogOut, Phone, Download } from "lucide-react";
 import { usePatientAuth } from "@/contexts/PatientAuthContext";
 import { appointmentApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { jsPDF } from 'jspdf';
 
 interface Appointment {
   _id: string;
@@ -39,6 +40,7 @@ interface Appointment {
   notes?: string;
   diagnosis?: string;
   prescription?: any[];
+  medicines?: string;
   vitalSigns?: any;
   completedAt?: string;
 }
@@ -55,6 +57,7 @@ const DoctorDashboard = () => {
   const [completionData, setCompletionData] = useState({
     diagnosis: "",
     notes: "",
+    medicines: "",
     vitalSigns: {
       bloodPressure: "",
       heartRate: "",
@@ -104,6 +107,25 @@ const DoctorDashboard = () => {
     }
   };
 
+  const handleAppointmentSelect = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    
+    // Pre-fill completion data with existing database data
+    setCompletionData({
+      diagnosis: appointment.diagnosis || "",
+      notes: appointment.notes || "",
+      medicines: appointment.medicines || "",
+      vitalSigns: {
+        bloodPressure: appointment.vitalSigns?.bloodPressure || "",
+        heartRate: appointment.vitalSigns?.heartRate || "",
+        temperature: appointment.vitalSigns?.temperature || "",
+        weight: appointment.vitalSigns?.weight || "",
+        height: appointment.vitalSigns?.height || "",
+        oxygenSaturation: appointment.vitalSigns?.oxygenSaturation || ""
+      }
+    });
+  };
+
   const handleCompleteAppointment = async () => {
     if (!selectedAppointment) return;
 
@@ -120,6 +142,7 @@ const DoctorDashboard = () => {
         setCompletionData({
           diagnosis: "",
           notes: "",
+          medicines: "",
           vitalSigns: {
             bloodPressure: "",
             heartRate: "",
@@ -136,6 +159,178 @@ const DoctorDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to complete appointment",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const generatePrescriptionPDF = (appointment: Appointment) => {
+    try {
+      console.log('Generating PDF for appointment:', appointment);
+      const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('MEDICAL PRESCRIPTION', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 10;
+
+    // Hospital Info
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('NeoMedix Hospitals', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 5;
+    doc.text('Best Multispecialty Healthcare', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 5;
+    doc.text('Phone: +91 123 456 7890 | Email: info@neomedix.com', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+
+    // Line separator
+    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    yPosition += 10;
+
+    // Patient Information
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PATIENT INFORMATION', 20, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Name: ${appointment.patient.name}`, 20, yPosition);
+    doc.text(`Age: ${appointment.patient.age} years`, 120, yPosition);
+    doc.text(`Gender: ${appointment.patient.gender}`, 180, yPosition);
+    yPosition += 8;
+
+    doc.text(`Phone: ${appointment.patient.phone}`, 20, yPosition);
+    doc.text(`Email: ${appointment.patient.email}`, 120, yPosition);
+    yPosition += 8;
+
+    if (appointment.patient.medicalCondition) {
+      doc.text(`Medical Condition: ${appointment.patient.medicalCondition}`, 20, yPosition);
+      yPosition += 8;
+    }
+
+    yPosition += 5;
+
+    // Appointment Details
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('APPOINTMENT DETAILS', 20, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${formatDate(appointment.appointmentDate)}`, 20, yPosition);
+    doc.text(`Time: ${formatTime(appointment.appointmentTime)}`, 120, yPosition);
+    doc.text(`Type: ${appointment.type}`, 180, yPosition);
+    yPosition += 8;
+
+    doc.text(`Reason: ${appointment.reason}`, 20, yPosition);
+    yPosition += 8;
+
+    yPosition += 5;
+
+    // Diagnosis
+    if (appointment.diagnosis) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DIAGNOSIS', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const diagnosisLines = doc.splitTextToSize(appointment.diagnosis, pageWidth - 40);
+      doc.text(diagnosisLines, 20, yPosition);
+      yPosition += diagnosisLines.length * 5 + 5;
+    }
+
+    // Medicines
+    if (appointment.medicines) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PRESCRIBED MEDICINES', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const medicineLines = doc.splitTextToSize(appointment.medicines, pageWidth - 40);
+      doc.text(medicineLines, 20, yPosition);
+      yPosition += medicineLines.length * 5 + 5;
+    }
+
+    // Vital Signs
+    if (appointment.vitalSigns) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('VITAL SIGNS', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const vitalSigns = appointment.vitalSigns;
+      if (vitalSigns.bloodPressure) doc.text(`Blood Pressure: ${vitalSigns.bloodPressure}`, 20, yPosition);
+      if (vitalSigns.heartRate) doc.text(`Heart Rate: ${vitalSigns.heartRate} bpm`, 120, yPosition);
+      yPosition += 8;
+      if (vitalSigns.temperature) doc.text(`Temperature: ${vitalSigns.temperature}`, 20, yPosition);
+      if (vitalSigns.weight) doc.text(`Weight: ${vitalSigns.weight}`, 120, yPosition);
+      yPosition += 8;
+      if (vitalSigns.height) doc.text(`Height: ${vitalSigns.height}`, 20, yPosition);
+      if (vitalSigns.oxygenSaturation) doc.text(`Oxygen Saturation: ${vitalSigns.oxygenSaturation}%`, 120, yPosition);
+      yPosition += 8;
+    }
+
+    // Notes
+    if (appointment.notes) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ADDITIONAL NOTES', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const notesLines = doc.splitTextToSize(appointment.notes, pageWidth - 40);
+      doc.text(notesLines, 20, yPosition);
+      yPosition += notesLines.length * 5 + 5;
+    }
+
+    // Doctor Information
+    yPosition += 10;
+    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Dr. ${appointment.doctor.name}`, 20, yPosition);
+    doc.text(`Specialty: ${appointment.doctor.specialty}`, 20, yPosition + 8);
+    doc.text(`Phone: ${appointment.doctor.phone}`, 20, yPosition + 16);
+    doc.text(`Email: ${appointment.doctor.email}`, 20, yPosition + 24);
+
+    // Date and Signature
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 60, yPosition);
+    doc.text('Doctor Signature', pageWidth - 60, yPosition + 20);
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('This is a computer-generated prescription. Please keep this for your records.', pageWidth / 2, pageHeight - 20, { align: 'center' });
+
+    // Download the PDF
+    const fileName = `Prescription_${appointment.patient.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+    
+    toast({
+      title: "Success",
+      description: "Prescription PDF downloaded successfully"
+    });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
         variant: "destructive"
       });
     }
@@ -385,7 +580,7 @@ const DoctorDashboard = () => {
                           <DialogTrigger asChild>
                             <Button
                               size="sm"
-                              onClick={() => setSelectedAppointment(appointment)}
+                              onClick={() => handleAppointmentSelect(appointment)}
                             >
                               Complete
                             </Button>
@@ -399,7 +594,12 @@ const DoctorDashboard = () => {
                             </DialogHeader>
                             <div className="space-y-4">
                               <div>
-                                <Label htmlFor="diagnosis">Diagnosis</Label>
+                                <Label htmlFor="diagnosis" className="flex items-center gap-2">
+                                  Diagnosis
+                                  {completionData.diagnosis && (
+                                    <Badge variant="outline" className="text-xs">Pre-filled</Badge>
+                                  )}
+                                </Label>
                                 <Textarea
                                   id="diagnosis"
                                   value={completionData.diagnosis}
@@ -408,10 +608,16 @@ const DoctorDashboard = () => {
                                     diagnosis: e.target.value
                                   }))}
                                   placeholder="Enter diagnosis..."
+                                  className={completionData.diagnosis ? "bg-blue-50" : ""}
                                 />
                               </div>
                               <div>
-                                <Label htmlFor="notes">Notes</Label>
+                                <Label htmlFor="notes" className="flex items-center gap-2">
+                                  Notes
+                                  {completionData.notes && (
+                                    <Badge variant="outline" className="text-xs">Pre-filled</Badge>
+                                  )}
+                                </Label>
                                 <Textarea
                                   id="notes"
                                   value={completionData.notes}
@@ -420,11 +626,34 @@ const DoctorDashboard = () => {
                                     notes: e.target.value
                                   }))}
                                   placeholder="Enter additional notes..."
+                                  className={completionData.notes ? "bg-blue-50" : ""}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="medicines" className="flex items-center gap-2">
+                                  Prescribed Medicines
+                                  <Badge variant="secondary" className="text-xs">Doctor Input Required</Badge>
+                                </Label>
+                                <Textarea
+                                  id="medicines"
+                                  value={completionData.medicines}
+                                  onChange={(e) => setCompletionData(prev => ({
+                                    ...prev,
+                                    medicines: e.target.value
+                                  }))}
+                                  placeholder="Enter prescribed medicines with dosage and instructions..."
+                                  rows={4}
+                                  className="bg-yellow-50 border-yellow-300"
                                 />
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <Label htmlFor="blood-pressure">Blood Pressure</Label>
+                                  <Label htmlFor="blood-pressure" className="flex items-center gap-2">
+                                    Blood Pressure
+                                    {completionData.vitalSigns.bloodPressure && (
+                                      <Badge variant="outline" className="text-xs">Pre-filled</Badge>
+                                    )}
+                                  </Label>
                                   <Input
                                     id="blood-pressure"
                                     value={completionData.vitalSigns.bloodPressure}
@@ -436,10 +665,16 @@ const DoctorDashboard = () => {
                                       }
                                     }))}
                                     placeholder="120/80"
+                                    className={completionData.vitalSigns.bloodPressure ? "bg-blue-50" : ""}
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="heart-rate">Heart Rate</Label>
+                                  <Label htmlFor="heart-rate" className="flex items-center gap-2">
+                                    Heart Rate
+                                    {completionData.vitalSigns.heartRate && (
+                                      <Badge variant="outline" className="text-xs">Pre-filled</Badge>
+                                    )}
+                                  </Label>
                                   <Input
                                     id="heart-rate"
                                     value={completionData.vitalSigns.heartRate}
@@ -451,10 +686,16 @@ const DoctorDashboard = () => {
                                       }
                                     }))}
                                     placeholder="72"
+                                    className={completionData.vitalSigns.heartRate ? "bg-blue-50" : ""}
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="temperature">Temperature</Label>
+                                  <Label htmlFor="temperature" className="flex items-center gap-2">
+                                    Temperature
+                                    {completionData.vitalSigns.temperature && (
+                                      <Badge variant="outline" className="text-xs">Pre-filled</Badge>
+                                    )}
+                                  </Label>
                                   <Input
                                     id="temperature"
                                     value={completionData.vitalSigns.temperature}
@@ -466,10 +707,16 @@ const DoctorDashboard = () => {
                                       }
                                     }))}
                                     placeholder="98.6°F"
+                                    className={completionData.vitalSigns.temperature ? "bg-blue-50" : ""}
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="weight">Weight</Label>
+                                  <Label htmlFor="weight" className="flex items-center gap-2">
+                                    Weight
+                                    {completionData.vitalSigns.weight && (
+                                      <Badge variant="outline" className="text-xs">Pre-filled</Badge>
+                                    )}
+                                  </Label>
                                   <Input
                                     id="weight"
                                     value={completionData.vitalSigns.weight}
@@ -481,6 +728,7 @@ const DoctorDashboard = () => {
                                       }
                                     }))}
                                     placeholder="70 kg"
+                                    className={completionData.vitalSigns.weight ? "bg-blue-50" : ""}
                                   />
                                 </div>
                               </div>
@@ -498,6 +746,29 @@ const DoctorDashboard = () => {
                             </div>
                           </DialogContent>
                         </Dialog>
+                      )}
+                      {appointment.status === 'Completed' && (
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => generatePrescriptionPDF(appointment)}
+                            className="flex items-center space-x-1"
+                          >
+                            <Download className="h-4 w-4" />
+                            <span>Download Prescription</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              console.log('Appointment data:', appointment);
+                              console.log('Medicines:', appointment.medicines);
+                            }}
+                          >
+                            Debug Data
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>

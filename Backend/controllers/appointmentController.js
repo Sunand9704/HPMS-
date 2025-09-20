@@ -368,7 +368,7 @@ const cancelAppointment = async (req, res) => {
 // @access  Private
 const completeAppointment = async (req, res) => {
   try {
-    const { diagnosis, prescription, vitalSigns, notes } = req.body;
+    const { diagnosis, prescription, vitalSigns, notes, medicines } = req.body;
 
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment || !appointment.isActive) {
@@ -390,6 +390,7 @@ const completeAppointment = async (req, res) => {
     appointment.prescription = prescription;
     appointment.vitalSigns = vitalSigns;
     appointment.notes = notes;
+    appointment.medicines = medicines;
     appointment.completedAt = new Date();
 
     await appointment.save();
