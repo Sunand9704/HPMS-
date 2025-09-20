@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Phone, Calendar } from "lucide-react";
+import { Menu, Phone, Calendar, User, LogOut } from "lucide-react";
+import { usePatientAuth } from "@/contexts/PatientAuthContext";
+import LoginModal from "./LoginModal";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { isAuthenticated, patient, logout } = usePatientAuth();
 
   const navigationItems = [
     { name: "Home", href: "#home" },
@@ -53,10 +57,32 @@ const Header = () => {
               <Phone className="mr-2 h-4 w-4" />
               Emergency: +91 123 456 7890
             </Button>
-            <Button className="bg-gradient-medical hover:shadow-hover transition-all duration-300">
-              <Calendar className="mr-2 h-4 w-4" />
-              Book an Appointment
-            </Button>
+            
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <User className="h-4 w-4" />
+                  <span>Welcome, {patient?.name}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={logout}
+                  className="flex items-center space-x-1"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsLoginModalOpen(true)}
+              >
+                Login / Register
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu */}
@@ -97,16 +123,48 @@ const Header = () => {
                     <Phone className="mr-2 h-4 w-4" />
                     Emergency: +91 123 456 7890
                   </Button>
-                  <Button className="w-full bg-gradient-medical">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Book an Appointment
-                  </Button>
+                  
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600 p-2 bg-gray-50 rounded">
+                        <User className="h-4 w-4" />
+                        <span>Welcome, {patient?.name}</span>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={() => {
+                          logout();
+                          setIsOpen(false);
+                        }}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      className="w-full bg-gradient-medical" 
+                      onClick={() => {
+                        setIsLoginModalOpen(true);
+                        setIsOpen(false);
+                      }}
+                    >
+                      Login / Register
+                    </Button>
+                  )}
                 </div>
               </div>
             </SheetContent>
           </Sheet>
         </div>
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </header>
   );
 };

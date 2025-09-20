@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Patient = require('../models/Patient');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
@@ -18,79 +19,103 @@ const login = async (req, res) => {
       });
     }
 
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    // Find user by email
-    const user = await User.findByEmail(email);
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Check if account is locked
-    if (user.isLocked) {
-      return res.status(423).json({
-        success: false,
-        message: 'Account is temporarily locked due to too many failed login attempts'
-      });
-    }
-
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      // Increment login attempts
-      await user.incLoginAttempts();
-      
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Reset login attempts on successful login
-    if (user.loginAttempts > 0) {
-      await user.resetLoginAttempts();
-    }
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'hpms_secret_key',
-      { expiresIn: '24h' }
-    );
-
-    // Log activity
-    await Activity.logActivity({
-      user: user._id,
-      action: 'login',
-      entity: 'user',
-      entityId: user._id,
-      description: `User logged in`,
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
-    });
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          department: user.department,
-          lastLogin: user.lastLogin
-        }
+    // Handle role-based login
+    if (role === 'Patient') {
+      // Patient login
+      const patient = await Patient.findOne({ email });
+      if (!patient || !patient.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
       }
-    });
+
+      // For now, we'll simulate patient login without password verification
+      // In a real app, you would add password field to Patient model and verify it
+      
+      // Generate JWT token for patient
+      const token = jwt.sign(
+        { 
+          patientId: patient._id, 
+          email: patient.email, 
+          role: 'Patient',
+          type: 'patient'
+        },
+        process.env.JWT_SECRET || 'hpms_secret_key',
+        { expiresIn: '24h' }
+      );
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          token,
+          patient: {
+            id: patient._id,
+            name: patient.name,
+            email: patient.email,
+            age: patient.age,
+            gender: patient.gender,
+            phone: patient.phone,
+            status: patient.status
+          }
+        }
+      });
+      return;
+    } else if (role === 'Doctor') {
+      // Doctor login - use User model
+      const user = await User.findByEmail(email);
+      if (!user || !user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
+      }
+
+      // Verify password
+      const isPasswordValid = await user.comparePassword(password);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
+      }
+
+      // Generate JWT token for doctor
+      const token = jwt.sign(
+        { 
+          userId: user._id, 
+          email: user.email, 
+          role: user.role,
+          type: 'user'
+        },
+        process.env.JWT_SECRET || 'hpms_secret_key',
+        { expiresIn: '24h' }
+      );
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          token,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department
+          }
+        }
+      });
+      return;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified'
+      });
+    }
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({

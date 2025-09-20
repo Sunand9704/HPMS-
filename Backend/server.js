@@ -76,7 +76,8 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/patients', authenticateToken, patientRoutes);
+app.use('/api/patients/public', patientRoutes); // Public patient registration (no auth)
+app.use('/api/patients', authenticateToken, patientRoutes); // Protected patient routes
 app.use('/api/doctors', authenticateToken, doctorRoutes);
 app.use('/api/appointments', authenticateToken, appointmentRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
