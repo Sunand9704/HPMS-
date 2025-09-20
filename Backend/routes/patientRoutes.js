@@ -6,7 +6,8 @@ const {
   createPatient,
   updatePatient,
   deletePatient,
-  getPatientStats
+  getPatientStats,
+  registerPatient
 } = require('../controllers/patientController');
 
 const router = express.Router();
@@ -39,11 +40,53 @@ const updatePatientValidation = [
   body('status').optional().isIn(['Active', 'Follow-up', 'Critical', 'Inactive']).withMessage('Invalid status')
 ];
 
+// Public patient registration validation (basic fields only)
+const registerPatientValidation = [
+  body('name')
+    .notEmpty()
+    .withMessage('Name is required')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
+  
+  body('age')
+    .notEmpty()
+    .withMessage('Age is required')
+    .isNumeric()
+    .withMessage('Age must be a number')
+    .toInt()
+    .isInt({ min: 0, max: 150 })
+    .withMessage('Age must be between 0 and 150'),
+  
+  body('gender')
+    .notEmpty()
+    .withMessage('Gender is required')
+    .isIn(['Male', 'Female', 'Other'])
+    .withMessage('Gender must be Male, Female, or Other'),
+  
+  body('email')
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email address')
+    .normalizeEmail()
+    .toLowerCase(),
+  
+  body('phone')
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .isLength({ min: 10, max: 15 })
+    .withMessage('Phone number must be between 10 and 15 characters')
+    .matches(/^[\+]?[1-9][\d]{0,15}$/)
+    .withMessage('Please enter a valid phone number')
+];
+
 // Routes
 router.get('/', getAllPatients);
 router.get('/stats', getPatientStats);
 router.get('/:id', getPatientById);
-router.post('/', createPatientValidation, createPatient);
+router.post('/', createPatient);
+router.post('/register', registerPatient); // Public registration
 router.put('/:id', updatePatientValidation, updatePatient);
 router.delete('/:id', deletePatient);
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,70 +29,13 @@ import {
   Star,
   Calendar
 } from "lucide-react";
+
 import AddDoctorDialog from "@/components/Dialogs/AddDoctorDialog";
 
-const mockDoctors = [
-  {
-    id: 1,
-    name: "Dr. Sarah Johnson",
-    specialty: "Cardiology",
-    email: "sarah.johnson@healthcare.com",
-    phone: "(555) 123-4567",
-    patients: 142,
-    experience: "15 years",
-    status: "Active",
-    rating: 4.9,
-    nextAvailable: "Today 2:30 PM"
-  },
-  {
-    id: 2,
-    name: "Dr. Michael Chen",
-    specialty: "Neurology", 
-    email: "michael.chen@healthcare.com",
-    phone: "(555) 234-5678",
-    patients: 98,
-    experience: "12 years",
-    status: "Active",
-    rating: 4.8,
-    nextAvailable: "Tomorrow 9:00 AM"
-  },
-  {
-    id: 3,
-    name: "Dr. Lisa Anderson",
-    specialty: "Pediatrics",
-    email: "lisa.anderson@healthcare.com",
-    phone: "(555) 345-6789",
-    patients: 187,
-    experience: "18 years",
-    status: "Active",
-    rating: 4.9,
-    nextAvailable: "Today 4:00 PM"
-  },
-  {
-    id: 4,
-    name: "Dr. Robert Wilson",
-    specialty: "Orthopedics",
-    email: "robert.wilson@healthcare.com",
-    phone: "(555) 456-7890",
-    patients: 76,
-    experience: "8 years",
-    status: "On Leave",
-    rating: 4.6,
-    nextAvailable: "Next Week"
-  },
-  {
-    id: 5,
-    name: "Dr. Emily Davis",
-    specialty: "Dermatology",
-    email: "emily.davis@healthcare.com",
-    phone: "(555) 567-8901",
-    patients: 134,
-    experience: "10 years",
-    status: "Active",
-    rating: 4.7,
-    nextAvailable: "Tomorrow 11:30 AM"
-  }
-];
+import { doctorAPI } from "@/lib/api";
+
+
+// Doctors data will be fetched from API
 
 const statusColors = {
   "Active": "bg-success text-success-foreground",
@@ -111,14 +54,43 @@ const specialtyColors = {
 export default function Doctors() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredDoctors = mockDoctors.filter(doctor => {
+  // Fetch doctors data
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await doctorAPI.getAll();
+        
+        if (response.success && response.data) {
+          // Handle the nested structure: response.data.doctors
+          const doctorsData = (response.data as any)?.doctors || response.data;
+          setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
+        } else {
+          setError(response.message || 'Failed to fetch doctors');
+        }
+      } catch (err) {
+        setError('Failed to fetch doctors');
+        console.error('Error fetching doctors:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  const filteredDoctors = Array.isArray(doctors) ? doctors.filter(doctor => {
     const matchesSearch = doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          doctor.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSpecialty = selectedSpecialty === "All" || doctor.specialty === selectedSpecialty;
     return matchesSearch && matchesSpecialty;
-  });
+  }) : [];
 
   return (
     <div className="space-y-6">
@@ -146,7 +118,7 @@ export default function Doctors() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Doctors</p>
-                <p className="text-2xl font-bold">{mockDoctors.length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(doctors) ? doctors.length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -160,7 +132,7 @@ export default function Doctors() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold">{mockDoctors.filter(d => d.status === "Active").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(doctors) ? doctors.filter(d => d.status === "Active").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -261,7 +233,7 @@ export default function Doctors() {
                         <Avatar className="w-10 h-10">
                           <AvatarImage src={`/placeholder-doctor-${doctor.id}.jpg`} />
                           <AvatarFallback className="bg-primary/10 text-primary">
-                            {doctor.name.split(' ').map(n => n[0]).join('')}
+                            {doctor.name.split(' ').map((n, idx) => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div>

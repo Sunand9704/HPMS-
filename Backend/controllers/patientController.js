@@ -2,6 +2,7 @@ const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Activity = require('../models/Activity');
 const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
 
 // @desc    Get all patients
 // @route   GET /api/patients
@@ -381,11 +382,92 @@ const getPatientStats = async (req, res) => {
   }
 };
 
+// @desc    Register new patient (public endpoint)
+// @route   POST /api/patients/public/register
+// @access  Public
+const registerPatient = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const {
+      name,
+      age,
+      gender,
+      email,
+      phone
+    } = req.body;
+
+    // Check if patient already exists
+    const existingPatient = await Patient.findOne({ email });
+    if (existingPatient) {
+      return res.status(400).json({
+        success: false,
+        message: 'Patient with this email already exists'
+      });
+    }
+
+    const patient = new Patient({
+      name,
+      age,
+      gender,
+      email,
+      phone,
+      status: 'Active'
+    });
+
+    await patient.save();
+
+    // Generate JWT token for the patient
+    const token = jwt.sign(
+      { 
+        patientId: patient._id, 
+        email: patient.email, 
+        role: 'Patient',
+        type: 'patient'
+      },
+      process.env.JWT_SECRET || 'hpms_secret_key',
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Patient registered successfully',
+      data: {
+        token,
+        patient: {
+          id: patient._id,
+          name: patient.name,
+          email: patient.email,
+          age: patient.age,
+          gender: patient.gender,
+          phone: patient.phone,
+          status: patient.status
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Register patient error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to register patient',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllPatients,
   getPatientById,
   createPatient,
   updatePatient,
   deletePatient,
-  getPatientStats
+  getPatientStats,
+  registerPatient
 };

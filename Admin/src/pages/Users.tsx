@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,54 +27,10 @@ import {
   Trash2,
   UserX
 } from "lucide-react";
+import { userAPI, apiUtils } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "Dr. Sarah Johnson",
-    email: "sarah.johnson@healthcare.com",
-    role: "Doctor",
-    status: "Active",
-    lastLogin: "2 hours ago",
-    department: "Cardiology"
-  },
-  {
-    id: 2,
-    name: "Mike Chen",
-    email: "mike.chen@healthcare.com", 
-    role: "Nurse",
-    status: "Active",
-    lastLogin: "1 day ago",
-    department: "Emergency"
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    email: "emily.davis@healthcare.com",
-    role: "Admin",
-    status: "Active", 
-    lastLogin: "3 hours ago",
-    department: "Administration"
-  },
-  {
-    id: 4,
-    name: "Robert Wilson",
-    email: "robert.wilson@healthcare.com",
-    role: "Technician",
-    status: "Inactive",
-    lastLogin: "1 week ago",
-    department: "Laboratory"
-  },
-  {
-    id: 5,
-    name: "Lisa Anderson",
-    email: "lisa.anderson@healthcare.com",
-    role: "Doctor",
-    status: "Active",
-    lastLogin: "30 minutes ago",
-    department: "Pediatrics"
-  }
-];
+// Users data will be fetched from API
 
 const roleColors = {
   "Doctor": "bg-primary text-primary-foreground",
@@ -91,13 +47,86 @@ const statusColors = {
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("All");
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
-  const filteredUsers = mockUsers.filter(user => {
+  // Fetch users data
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        setError('Please login to view users');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 5000)
+        );
+        
+        const response = await Promise.race([
+          userAPI.getAll(),
+          timeoutPromise
+        ]) as any;
+        
+        if (response.success && response.data) {
+          // Handle the nested structure: response.data.users
+          const usersData = (response.data as any)?.users || response.data;
+          setUsers(Array.isArray(usersData) ? usersData : []);
+        } else {
+          setError(response.message || 'Failed to fetch users');
+        }
+      } catch (err) {
+        setError('Failed to fetch users - Please check your connection');
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [isAuthenticated]);
+
+  const filteredUsers = Array.isArray(users) ? users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === "All" || user.role === selectedRole;
     return matchesSearch && matchesRole;
-  });
+  }) : [];
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          {!isAuthenticated ? (
+            <Button onClick={() => window.location.href = '/login'}>Go to Login</Button>
+          ) : (
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -125,7 +154,7 @@ export default function Users() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-2xl font-bold">{mockUsers.length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(users) ? users.length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -139,7 +168,7 @@ export default function Users() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold">{mockUsers.filter(u => u.status === "Active").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(users) ? users.filter(u => u.status === "Active").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -153,7 +182,7 @@ export default function Users() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Doctors</p>
-                <p className="text-2xl font-bold">{mockUsers.filter(u => u.role === "Doctor").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(users) ? users.filter(u => u.role === "Doctor").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -167,7 +196,7 @@ export default function Users() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Staff</p>
-                <p className="text-2xl font-bold">{mockUsers.filter(u => u.role !== "Doctor").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(users) ? users.filter(u => u.role !== "Doctor").length : 0}</p>
               </div>
             </div>
           </CardContent>
