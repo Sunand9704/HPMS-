@@ -52,7 +52,11 @@ const ratingValidation = [
   body('rating').isFloat({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5')
 ];
 
-// Routes
+// Public routes (no authentication required)
+router.get('/public', getAllDoctors);
+router.get('/public/:id', getDoctorById);
+
+// Private routes (authentication required)
 router.get('/', getAllDoctors);
 router.get('/stats', getDoctorStats);
 router.get('/:id', getDoctorById);

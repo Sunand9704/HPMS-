@@ -64,8 +64,8 @@ const login = async (req, res) => {
         }
       });
       return;
-    } else if (role === 'Doctor') {
-      // Doctor login - use User model
+    } else if (role === 'Doctor' || role === 'Admin') {
+      // Doctor/Admin login - use User model
       const user = await User.findByEmail(email);
       if (!user || !user.isActive) {
         return res.status(401).json({
@@ -83,7 +83,7 @@ const login = async (req, res) => {
         });
       }
 
-      // Generate JWT token for doctor
+      // Generate JWT token for doctor/admin
       const token = jwt.sign(
         { 
           userId: user._id, 

@@ -88,8 +88,10 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/patients/public', patientRoutes); // Public patient registration (no auth)
 app.use('/api/patients', authenticateToken, patientRoutes); // Protected patient routes
-app.use('/api/doctors', authenticateToken, doctorRoutes);
-app.use('/api/appointments', authenticateToken, appointmentRoutes);
+app.use('/api/doctors/public', doctorRoutes); // Public doctor routes (no auth)
+app.use('/api/doctors', authenticateToken, doctorRoutes); // Protected doctor routes
+app.use('/api/appointments/public', appointmentRoutes); // Public appointment booking (no auth)
+app.use('/api/appointments', authenticateToken, appointmentRoutes); // Protected appointment routes
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 

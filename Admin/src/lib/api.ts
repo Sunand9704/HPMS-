@@ -59,7 +59,7 @@ export const authAPI = {
   login: (credentials: { email: string; password: string }) =>
     apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({ ...credentials, role: 'Admin' }),
     }),
 
   logout: () =>
