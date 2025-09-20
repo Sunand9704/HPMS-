@@ -16,6 +16,9 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
 
+// Import seed function
+const { seedDatabase } = require('./seedData');
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -26,8 +29,15 @@ mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => {
+.then(async () => {
   console.log('✅ Connected to MongoDB Atlas');
+  
+  // Seed database if empty
+  try {
+    await seedDatabase();
+  } catch (error) {
+    console.error('❌ Error seeding database:', error);
+  }
 })
 .catch((error) => {
   console.error('❌ MongoDB connection error:', error);
@@ -40,7 +50,7 @@ app.use(helmet());
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // limit each IP to 1000 requests per windowMs (increased for testing)
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);

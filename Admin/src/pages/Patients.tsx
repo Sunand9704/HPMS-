@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { patientAPI } from "@/lib/api";
-import { usePaginatedAPI } from "@/hooks/useAPI";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Table,
   TableBody,
@@ -44,39 +44,88 @@ export default function Patients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
 
-  // Fetch patients data from API
-  const { 
-    data: patients, 
-    pagination, 
-    loading, 
-    error, 
-    goToPage, 
-    refetch 
-  } = usePaginatedAPI(
-    (page, limit, filters) => patientAPI.getAll({
-      page,
-      limit,
-      search: searchQuery || undefined,
-      status: selectedStatus !== "All" ? selectedStatus : undefined,
-      ...filters
-    }),
-    1,
-    10,
-    { search: searchQuery, status: selectedStatus }
-  );
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
-  // Handle search and filter changes
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    // Refetch with new search term
-    refetch();
-  };
+  // Fetch patients data
+  useEffect(() => {
+    const fetchPatients = async () => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        setError('Please login to view patients');
+        return;
+      }
 
-  const handleStatusFilter = (status: string) => {
-    setSelectedStatus(status);
-    // Refetch with new status filter
-    refetch();
-  };
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 5000)
+        );
+        
+        const response = await Promise.race([
+          patientAPI.getAll(),
+          timeoutPromise
+        ]) as any;
+        
+        if (response.success && response.data) {
+          // Handle the nested structure: response.data.patients
+          const patientsData = (response.data as any)?.patients || response.data;
+          setPatients(Array.isArray(patientsData) ? patientsData : []);
+        } else {
+          setError(response.message || 'Failed to fetch patients');
+        }
+      } catch (err) {
+        setError('Failed to fetch patients - Please check your connection');
+        console.error('Error fetching patients:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
+  }, [isAuthenticated]);
+
+  // Filter patients based on search and status
+  const filteredPatients = Array.isArray(patients) ? patients.filter(patient => {
+    const matchesSearch = patient.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         patient.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         patient.medicalCondition?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = selectedStatus === "All" || patient.status === selectedStatus;
+    return matchesSearch && matchesStatus;
+  }) : [];
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading patients...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          {!isAuthenticated ? (
+            <Button onClick={() => window.location.href = '/login'}>Go to Login</Button>
+          ) : (
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -110,7 +159,7 @@ export default function Patients() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Patients</p>
-                <p className="text-2xl font-bold">{pagination?.total || 0}</p>
+                <p className="text-2xl font-bold">{Array.isArray(patients) ? patients.length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -124,7 +173,7 @@ export default function Patients() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold">{patients?.filter(p => p.status === "Active").length || 0}</p>
+                <p className="text-2xl font-bold">{Array.isArray(patients) ? patients.filter(p => p.status === "Active").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -138,7 +187,7 @@ export default function Patients() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Critical</p>
-                <p className="text-2xl font-bold">{patients?.filter(p => p.status === "Critical").length || 0}</p>
+                <p className="text-2xl font-bold">{Array.isArray(patients) ? patients.filter(p => p.status === "Critical").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -152,7 +201,7 @@ export default function Patients() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Follow-up</p>
-                <p className="text-2xl font-bold">{patients?.filter(p => p.status === "Follow-up").length || 0}</p>
+                <p className="text-2xl font-bold">{Array.isArray(patients) ? patients.filter(p => p.status === "Follow-up").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -171,7 +220,7 @@ export default function Patients() {
               <Input
                 placeholder="Search patients..."
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -184,19 +233,19 @@ export default function Patients() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleStatusFilter("All")}>
+                <DropdownMenuItem onClick={() => setSelectedStatus("All")}>
                   All Status
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusFilter("Active")}>
+                <DropdownMenuItem onClick={() => setSelectedStatus("Active")}>
                   Active
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusFilter("Critical")}>
+                <DropdownMenuItem onClick={() => setSelectedStatus("Critical")}>
                   Critical
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusFilter("Follow-up")}>
+                <DropdownMenuItem onClick={() => setSelectedStatus("Follow-up")}>
                   Follow-up
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusFilter("Inactive")}>
+                <DropdownMenuItem onClick={() => setSelectedStatus("Inactive")}>
                   Inactive
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -233,8 +282,8 @@ export default function Patients() {
                       Error loading patients: {error}
                     </TableCell>
                   </TableRow>
-                ) : patients && patients.length > 0 ? (
-                  patients.map((patient: any) => (
+                ) : filteredPatients && filteredPatients.length > 0 ? (
+                  filteredPatients.map((patient: any) => (
                     <TableRow key={patient._id} className="hover:bg-accent/50">
                       <TableCell className="font-medium">{patient.name}</TableCell>
                       <TableCell>{patient.age}Y • {patient.gender}</TableCell>
