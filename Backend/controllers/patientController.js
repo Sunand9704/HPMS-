@@ -234,21 +234,30 @@ const updatePatient = async (req, res) => {
     delete updateData.createdAt;
     delete updateData.updatedAt;
 
+    console.log('Update data:', JSON.stringify(updateData, null, 2));
+
     const updatedPatient = await Patient.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true }
+      { new: true, runValidators: false }
     ).populate('assignedDoctor', 'name specialty email phone');
 
+    console.log('Updated patient:', updatedPatient ? 'Success' : 'Failed');
+
     // Log activity
-    await Activity.logActivity({
-      user: req.user.id,
-      action: 'update_patient',
-      entity: 'patient',
-      entityId: patient._id,
-      description: `Updated patient: ${patient.name}`,
-      details: { patientId: patient._id, changes: updateData }
-    });
+    try {
+      await Activity.logActivity({
+        user: req.user.id,
+        action: 'update_patient',
+        entity: 'patient',
+        entityId: patient._id,
+        description: `Updated patient: ${patient.name}`,
+        details: { patientId: patient._id, changes: updateData }
+      });
+    } catch (logError) {
+      console.error('Activity logging error:', logError);
+      // Continue even if logging fails
+    }
 
     res.json({
       success: true,

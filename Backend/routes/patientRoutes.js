@@ -37,7 +37,12 @@ const updatePatientValidation = [
   body('email').optional().isEmail().withMessage('Valid email is required'),
   body('phone').optional().isMobilePhone().withMessage('Valid phone number is required'),
   body('assignedDoctor').optional().isMongoId().withMessage('Valid doctor ID is required'),
-  body('status').optional().isIn(['Active', 'Follow-up', 'Critical', 'Inactive']).withMessage('Invalid status')
+  body('status').optional().isIn(['Active', 'Follow-up', 'Critical', 'Inactive']).withMessage('Invalid status'),
+  body('medicalCondition').optional().notEmpty().withMessage('Medical condition cannot be empty'),
+  body('address.street').optional().notEmpty().withMessage('Street address is required'),
+  body('address.city').optional().notEmpty().withMessage('City is required'),
+  body('address.state').optional().notEmpty().withMessage('State is required'),
+  body('address.zipCode').optional().notEmpty().withMessage('Zip code is required')
 ];
 
 // Public patient registration validation (basic fields only)
