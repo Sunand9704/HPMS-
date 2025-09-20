@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,64 +29,9 @@ import {
   Edit,
   Phone
 } from "lucide-react";
+import { appointmentAPI } from "@/lib/api";
 
-const mockAppointments = [
-  {
-    id: 1,
-    patient: "Emma Thompson",
-    doctor: "Dr. Sarah Johnson",
-    date: "2024-01-20",
-    time: "09:30 AM",
-    type: "Consultation", 
-    status: "Scheduled",
-    duration: "30 min",
-    reason: "Regular Checkup"
-  },
-  {
-    id: 2,
-    patient: "James Wilson",
-    doctor: "Dr. Lisa Anderson",
-    date: "2024-01-20",
-    time: "10:00 AM",
-    type: "Follow-up",
-    status: "In Progress", 
-    duration: "45 min",
-    reason: "Diabetes Management"
-  },
-  {
-    id: 3,
-    patient: "Maria Garcia",
-    doctor: "Dr. Michael Chen",
-    date: "2024-01-20",
-    time: "11:30 AM",
-    type: "Emergency",
-    status: "Completed",
-    duration: "60 min", 
-    reason: "Chest Pain"
-  },
-  {
-    id: 4,
-    patient: "Robert Brown",
-    doctor: "Dr. Emily Davis",
-    date: "2024-01-20",
-    time: "02:00 PM",
-    type: "Consultation",
-    status: "Cancelled",
-    duration: "30 min",
-    reason: "Skin Examination"
-  },
-  {
-    id: 5,
-    patient: "Jennifer Lee",
-    doctor: "Dr. Sarah Johnson",
-    date: "2024-01-20",
-    time: "03:30 PM",
-    type: "Surgery Prep",
-    status: "Scheduled",
-    duration: "90 min",
-    reason: "Pre-operative Assessment"
-  }
-];
+// Appointments data will be fetched from API
 
 const statusColors = {
   "Scheduled": "bg-primary text-primary-foreground",
@@ -106,14 +51,47 @@ const typeColors = {
 export default function Appointments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredAppointments = mockAppointments.filter(appointment => {
-    const matchesSearch = appointment.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         appointment.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         appointment.reason.toLowerCase().includes(searchQuery.toLowerCase());
+  // Fetch appointments data
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await appointmentAPI.getAll();
+        
+        if (response.success && response.data) {
+          // Handle the nested structure: response.data.appointments
+          const appointmentsData = (response.data as any)?.appointments || response.data;
+          setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+        } else {
+          setError(response.message || 'Failed to fetch appointments');
+        }
+      } catch (err) {
+        setError('Failed to fetch appointments');
+        console.error('Error fetching appointments:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  const filteredAppointments = Array.isArray(appointments) ? appointments.filter(appointment => {
+    const patientName = appointment.patient?.name || '';
+    const doctorName = appointment.doctor?.name || '';
+    const reason = appointment.reason || '';
+    
+    const matchesSearch = patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         reason.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === "All" || appointment.status === selectedStatus;
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   return (
     <div className="space-y-6">
@@ -141,7 +119,7 @@ export default function Appointments() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Today's Appointments</p>
-                <p className="text-2xl font-bold">{mockAppointments.length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(appointments) ? appointments.length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -155,7 +133,7 @@ export default function Appointments() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{mockAppointments.filter(a => a.status === "Completed").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(appointments) ? appointments.filter(a => a.status === "Completed").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -169,7 +147,7 @@ export default function Appointments() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold">{mockAppointments.filter(a => a.status === "In Progress").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(appointments) ? appointments.filter(a => a.status === "In Progress").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -183,7 +161,7 @@ export default function Appointments() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Cancelled</p>
-                <p className="text-2xl font-bold">{mockAppointments.filter(a => a.status === "Cancelled").length}</p>
+                <p className="text-2xl font-bold">{Array.isArray(appointments) ? appointments.filter(a => a.status === "Cancelled").length : 0}</p>
               </div>
             </div>
           </CardContent>
@@ -255,8 +233,8 @@ export default function Appointments() {
                 {filteredAppointments.map((appointment) => (
                   <TableRow key={appointment.id} className="hover:bg-accent/50">
                     <TableCell className="font-medium">{appointment.time}</TableCell>
-                    <TableCell>{appointment.patient}</TableCell>
-                    <TableCell>{appointment.doctor}</TableCell>
+                    <TableCell>{appointment.patient?.name || 'N/A'}</TableCell>
+                    <TableCell>{appointment.doctor?.name || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge 
                         variant="outline"
