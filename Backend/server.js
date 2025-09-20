@@ -47,7 +47,13 @@ app.use(limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // React dev servers
+  origin: [
+    'http://localhost:3000',  // React dev server
+    'http://localhost:5173',  // Vite default port
+    'http://localhost:8080',  // Admin & Frontend configured port
+    'http://localhost:8081',  // Alternative port for Admin/Frontend
+    'http://localhost:8082'   // Another alternative port
+  ],
   credentials: true
 }));
 
