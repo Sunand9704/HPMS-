@@ -10,6 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
+const publicAppointmentRoutes = require('./routes/publicAppointmentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
@@ -90,7 +91,7 @@ app.use('/api/patients/public', patientRoutes); // Public patient registration (
 app.use('/api/patients', authenticateToken, patientRoutes); // Protected patient routes
 app.use('/api/doctors/public', doctorRoutes); // Public doctor routes (no auth)
 app.use('/api/doctors', authenticateToken, doctorRoutes); // Protected doctor routes
-app.use('/api/appointments/public', appointmentRoutes); // Public appointment booking (no auth)
+app.use('/api/appointments/public', publicAppointmentRoutes); // Public appointment booking (no auth)
 app.use('/api/appointments', authenticateToken, appointmentRoutes); // Protected appointment routes
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);

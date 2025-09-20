@@ -1,4 +1,5 @@
 const Doctor = require('../models/Doctor');
+const User = require('../models/User');
 const Patient = require('../models/Patient');
 const Activity = require('../models/Activity');
 const { validationResult } = require('express-validator');
@@ -152,6 +153,7 @@ const createDoctor = async (req, res) => {
       name,
       email,
       phone,
+      password,
       specialty,
       licenseNumber,
       experience,
@@ -176,6 +178,19 @@ const createDoctor = async (req, res) => {
       });
     }
 
+    // Check if user already exists (only check active users)
+    const existingUser = await User.findOne({ 
+      email,
+      isActive: true
+    });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Create Doctor record
     const doctor = new Doctor({
       name,
       email,
@@ -194,6 +209,31 @@ const createDoctor = async (req, res) => {
 
     await doctor.save();
 
+    // Create corresponding User record for authentication
+    const user = new User({
+      name,
+      email,
+      password, // Use provided password
+      role: 'Doctor',
+      department,
+      employeeId: licenseNumber, // Use license number as employee ID
+      phone,
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: ''
+      },
+      profile: {
+        bio,
+        dateOfBirth: new Date(),
+        gender: 'Other'
+      },
+      isActive: true
+    });
+
+    await user.save();
+
     // Log activity
     await Activity.logActivity({
       user: req.user.id,
@@ -207,7 +247,14 @@ const createDoctor = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Doctor created successfully',
-      data: doctor
+      data: {
+        doctor,
+        user: {
+          id: user._id,
+          email: user.email,
+          role: user.role
+        }
+      }
     });
   } catch (error) {
     console.error('Create doctor error:', error);

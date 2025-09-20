@@ -158,6 +158,20 @@ export default function AddDoctorForm({ onSuccess, onCancel }: AddDoctorFormProp
                 
                 <FormField
                   control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password *</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Enter password (min 6 characters)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="specialty"
                   render={({ field }) => (
                     <FormItem>

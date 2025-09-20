@@ -6,6 +6,7 @@ export const doctorFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name cannot exceed 100 characters"),
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Phone number must be at least 10 digits").regex(/^[\+]?[1-9][\d]{0,15}$/, "Please enter a valid phone number"),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
   
   // Professional Information
   specialty: z.enum([
@@ -101,6 +102,7 @@ export const defaultDoctorFormValues: Partial<DoctorFormData> = {
   name: "",
   email: "",
   phone: "",
+  password: "",
   specialty: undefined,
   licenseNumber: "",
   experience: 0,
